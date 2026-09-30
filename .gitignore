@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+.clangd
 
 # Compiled Object files
 *.slo
@@ -43,6 +44,7 @@
 build/
 Build/
 build-*/
+sdkconfig
 
 # CMake generated files
 CMakeFiles/
@@ -67,3 +69,5 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+managed_components/
