@@ -4,28 +4,22 @@
 #include "rc522_picc.h"
 #include "esp_log.h"
 #include "driver/spi_common.h"
+#include "spi_bus_config.h"
 
-spi_bus_config_t bus_config = {};
+#define RC522_SPI_SCANNER_GPIO_SDA (5)
+#define RC522_SCANNER_GPIO_RST     (GPIO_NUM_21)
+
+static const char* TAG = "rc522_rfid";
+
 rc522_spi_config_t driver_config = {};
 
 rc522_driver_handle_t driver;
 rc522_handle_t scanner;
 
-void init_bus_config()
-{
-  bus_config.mosi_io_num = RC522_SPI_BUS_GPIO_MOSI;
-  bus_config.miso_io_num = RC522_SPI_BUS_GPIO_MISO;
-  bus_config.sclk_io_num = RC522_SPI_BUS_GPIO_SCLK;
-
-  bus_config.quadhd_io_num = -1;
-  bus_config.quadwp_io_num = -1;
-}
-
 void init_driver_config()
 {
 
-  driver_config.host_id = SPI3_HOST;
-  driver_config.bus_config = &bus_config;
+  driver_config.host_id = SPI_BUS_HOST;
 
   driver_config.dev_config = {};
   driver_config.dev_config.spics_io_num = RC522_SPI_SCANNER_GPIO_SDA;
@@ -54,8 +48,8 @@ void picc_state_changed(void *arg, esp_event_base_t event_base, int32_t event_id
 
 void spi_driver_config()
 {
-  rc522_spi_create(&driver_config, &driver);
-  rc522_driver_install(driver);
+  ESP_ERROR_CHECK(rc522_spi_create(&driver_config, &driver));
+  ESP_ERROR_CHECK(rc522_driver_install(driver));
 }
 
 void scanner_config()
@@ -63,6 +57,13 @@ void scanner_config()
   rc522_config_t scanner_config = {};
   scanner_config.driver = driver;
 
-  rc522_create(&scanner_config, &scanner);
-  rc522_register_events(scanner, RC522_EVENT_PICC_STATE_CHANGED, picc_state_changed, NULL);
+  ESP_ERROR_CHECK(rc522_create(&scanner_config, &scanner));
+  ESP_ERROR_CHECK(rc522_register_events(scanner, RC522_EVENT_PICC_STATE_CHANGED, picc_state_changed, NULL));
+}
+
+void init_rc522() {
+  init_driver_config(); //Configure the RC522 driver parameters
+  spi_driver_config();  //Initialize the SPI driver and install it
+  scanner_config(); //Create the RC522 scanner instance and configure it
+  ESP_ERROR_CHECK(rc522_start(scanner)); //Start the RC522 scanner
 }
